@@ -20,13 +20,59 @@ router.get('/', async (req: Request, res: Response) => {
 //Add an endpoint to GET a specific resource by Primary Key
 
 // update a specific resource
-router.patch('/:id', 
+router.get('/:id', 
     requireAuth, 
     async (req: Request, res: Response) => {
         //@TODO try it yourself
-        res.status(500).send("not implemented")
+        const { id } = req.params;
+
+        if(!id || parseInt(id) === 0) {
+            return res.status(400).send({ message: 'Id is required' });
+        }
+
+        const feed = await FeedItem.findByPk(id);
+
+        if(!feed) {
+            return res.status(404).send({ message: 'There is no feed with the ID provided.' });
+        }
+
+        res.status(200).send(feed);
 });
 
+router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    console.log(req.body);
+    const caption = req.body.caption;
+    const fileName = req.body.url;
+
+    if(!id || parseInt(id) === 0) {
+        return res.status(400).send({ message: 'Id is required' });
+    }
+
+    // check Caption is valid
+    if (!caption) {
+        return res.status(400).send({ message: 'Caption is required or malformed' });
+    }
+
+    // check Filename is valid
+    if (!fileName) {
+        return res.status(400).send({ message: 'File url is required' });
+    }
+
+    const currentFeed = await FeedItem.findByPk(id);
+
+    if(!currentFeed) {
+        return res.status(404).send({ message: 'There is no feed with the ID provided.' });
+    }
+
+    await FeedItem.update({ caption: caption, url: fileName}, {
+        where: {
+            id: id
+        }
+    });
+
+    res.status(204).send();
+});
 
 // Get a signed url to put a new item in the bucket
 router.get('/signed-url/:fileName', 
